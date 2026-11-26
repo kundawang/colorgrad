@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- New `Gradient.MinContrast()` and package-level `MinContrast()` for minimum WCAG text contrast over a gradient domain
+- New `ContrastRatio()` and `RelativeLuminance()` accessibility helpers
+
 ## v0.11.1
 
 - Fix bug in Lab conversion

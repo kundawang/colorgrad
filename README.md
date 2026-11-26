@@ -257,6 +257,40 @@ This is the effect of different smoothness.
 
 ![img](doc/images/sharp-gradients.png)
 
+### Minimum text contrast
+
+To find the hardest position for a text color over an opaque background, use
+`MinContrast`. It composites gradient and text alpha over the background and
+then calculates the [WCAG 2.x contrast ratio](https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio).
+
+```go
+grad, _ := colorgrad.NewGradient().
+    Colors(
+        colorgrad.Rgb(1, 1, 1, 1),
+        colorgrad.Rgb(0.5, 0.5, 0.5, 1),
+        colorgrad.Rgb(1, 1, 1, 1),
+    ).
+    Build()
+
+worst, err := grad.MinContrast(
+    colorgrad.Rgb(0, 0, 0, 1), // text
+    colorgrad.Rgb(1, 1, 1, 1), // opaque base/background
+)
+if err != nil {
+    panic(err)
+}
+
+fmt.Printf("lowest contrast: %.2f:1 at %.3f\n", worst.Ratio, worst.Position)
+// lowest contrast: 5.28:1 at 0.500
+```
+
+For a `(ratio, position, error)` return, use `MinContrastXY` or the
+package-level `colorgrad.MinContrastXY(grad, text, background)`.
+
+The search covers all built-in interpolation and hard-edge gradients, includes
+color stops and breakpoints, and uses a bounded coarse search plus golden-section
+refinement. Equal minima return a deterministic leftmost representative.
+
 ## Examples
 
 ### Gradient Image
