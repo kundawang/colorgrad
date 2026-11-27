@@ -3,6 +3,7 @@
 ## v0.11.0 (Unreleased)
 
 - New `GradientBuilder.Reset()`
+- New `Gradient.ColorblindCheck()` for repeatable deuteranopia (red-green color vision deficiency) discrimination checks across gradient palettes
 
 ## v0.10.2
 

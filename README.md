@@ -237,6 +237,20 @@ This is the effect of different smoothness.
 
 ![img](doc/images/sharp-gradients.png)
 
+### Color Vision Deficiency Check
+
+`ColorblindCheck()` samples the given number of colors, simulates deuteranopia (red-green color vision deficiency) using the Brettel-Vienot-Mollon model and reports every pair of adjacent samples whose perceptual distance (Euclidean distance in OKLab) is below the threshold. Semi-transparent colors are alpha composited over the given background first. The original gradient is not modified.
+
+```go
+grad, _ := colorgrad.NewGradient().HtmlColors("red", "lime").Build()
+
+// Sample 2 colors, report adjacent pairs with OKLab distance below 0.5,
+// compositing alpha over opaque white.
+conflicts, err := grad.ColorblindCheck(2, 0.5, colorgrad.Rgb(1, 1, 1, 1))
+```
+
+Each reported conflict contains the sample index, both gradient positions, the two composited colors and the measured distance. Reports are ordered by position and reproducible across runs.
+
 ## Examples
 
 ### Gradient Image

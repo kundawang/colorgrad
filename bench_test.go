@@ -91,3 +91,19 @@ func BenchmarkBasisGradient(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkColorblindCheck(b *testing.B) {
+	grad, err := NewGradient().HtmlColors(colors...).Build()
+	if err != nil {
+		panic(err)
+	}
+	white := Rgb(1, 1, 1, 1)
+	for _, n := range []uint{16, 64, 256} {
+		b.Run(
+			fmt.Sprintf("count_%d", n), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					_, _ = grad.ColorblindCheck(n, 0.5, white)
+				}
+			})
+	}
+}
