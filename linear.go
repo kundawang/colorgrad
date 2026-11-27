@@ -62,6 +62,10 @@ func (lg linearGradient) At(t float64) Color {
 	return Color{}
 }
 
+func (lg linearGradient) stopPositions() []float64 {
+	return lg.positions
+}
+
 func newLinearGradient(colors []Color, positions []float64, mode BlendMode) Gradient {
 	gradbase := linearGradient{
 		colors:    convertColors(colors, mode),

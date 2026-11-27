@@ -7,6 +7,7 @@
 - `Gradient`'s fields is now public
 - `GradientCore` is now public
 - New `InterpolationSmoothstep`
+- New `Gradient.AverageColor()`, coverage-weighted interval average in linear light with premultiplied alpha, with `AverageEpsilon()` and `AverageMaxDepth()` options
 
 ## v0.10.2
 

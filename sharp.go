@@ -55,6 +55,10 @@ func (sg sharpGradient) At(t float64) Color {
 	return blendRgb(a, b, t)
 }
 
+func (sg sharpGradient) stopPositions() []float64 {
+	return sg.positions
+}
+
 func newSharpGradient(colorsIn []Color, dmin, dmax float64, smoothness float64) Gradient {
 	n := len(colorsIn)
 	colors := make([]Color, n*2)

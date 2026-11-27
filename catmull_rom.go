@@ -110,6 +110,10 @@ func newCatmullRomGradient(colors []Color, positions []float64, space BlendMode)
 	}
 }
 
+func (g catmullRomGradient) stopPositions() []float64 {
+	return g.positions
+}
+
 func (g catmullRomGradient) At(t float64) Color {
 	if math.IsNaN(t) {
 		return Color{A: 1}

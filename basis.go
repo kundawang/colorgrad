@@ -86,6 +86,10 @@ func (lg basisGradient) At(t float64) Color {
 	return Color{}
 }
 
+func (lg basisGradient) stopPositions() []float64 {
+	return lg.positions
+}
+
 func newBasisGradient(colors []Color, positions []float64, mode BlendMode) Gradient {
 	gradbase := basisGradient{
 		colors:    convertColors(colors, mode),

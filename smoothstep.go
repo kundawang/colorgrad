@@ -62,6 +62,10 @@ func (sg smoothstepGradient) At(t float64) Color {
 	return Color{}
 }
 
+func (sg smoothstepGradient) stopPositions() []float64 {
+	return sg.positions
+}
+
 func newSmoothstepGradient(colors []Color, positions []float64, mode BlendMode) Gradient {
 	gradbase := smoothstepGradient{
 		colors:    convertColors(colors, mode),

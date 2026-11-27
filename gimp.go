@@ -58,6 +58,15 @@ type gimpGradient struct {
 	max      float64
 }
 
+func (ggr gimpGradient) stopPositions() []float64 {
+	positions := make([]float64, 0, len(ggr.segments)+1)
+	positions = append(positions, ggr.segments[0].lpos)
+	for _, seg := range ggr.segments {
+		positions = append(positions, seg.rpos)
+	}
+	return positions
+}
+
 func (ggr gimpGradient) At(t float64) Color {
 	if t <= ggr.min {
 		return ggr.segments[0].lcolor

@@ -34,3 +34,34 @@ func Example_customGradient() {
 	// #ff0000
 	// #00ff00
 }
+
+func ExampleGradient_AverageColor() {
+	grad, err := colorgrad.NewGradient().
+		HtmlColors("#f00", "#0f0").
+		Build()
+	if err != nil {
+		panic(err)
+	}
+	sharp := grad.Sharp(2, 0)
+
+	// Coverage-weighted average over the whole interval: half red, half
+	// green, integrated in linear light with premultiplied alpha.
+	avg, err := sharp.AverageColor(0, 1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(avg.HexString())
+
+	// Bounded precision.
+	tight, err := sharp.AverageColor(0, 1,
+		colorgrad.AverageEpsilon(1e-10),
+		colorgrad.AverageMaxDepth(20),
+	)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(tight.HexString())
+	// Output:
+	// #bcbc00
+	// #bcbc00
+}

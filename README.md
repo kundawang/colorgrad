@@ -244,6 +244,48 @@ Output:
 #6e40aa
 ```
 
+### Get the average color over an interval
+
+`AverageColor()` returns the coverage-weighted average color over the
+parameter interval `[t0, t1]`. This is what you want when shrinking a long
+gradient into a few pixels: sampling each pixel center can miss narrow color
+bands and transparency boundaries, whereas the interval average accounts for
+the full coverage of every band.
+
+The average is computed in linear light (linear sRGB) with premultiplied
+alpha, so transparent regions never bleed dark fringes into the result. It
+works with linear, smoothstep, Basis, Catmull-Rom and hard-edge gradients.
+
+```go
+grad, _ := colorgrad.NewGradient().
+    HtmlColors("#ff0000", "#00ff00").
+    Build()
+
+sharp := grad.Sharp(2, 0)
+
+avg, err := sharp.AverageColor(0, 1)
+if err != nil {
+    panic(err)
+}
+fmt.Println(avg.HexString()) // #bcbc00
+```
+
+The integration precision is bounded and configurable through
+`AverageEpsilon()` (per-channel absolute tolerance, default 1e-8) and
+`AverageMaxDepth()` (adaptive subdivision limit, default 16):
+
+```go
+avg, err := grad.AverageColor(0, 1,
+    colorgrad.AverageEpsilon(1e-10),
+    colorgrad.AverageMaxDepth(20),
+)
+```
+
+Non-finite (`NaN`/`Inf`) endpoints return an error. A reversed interval is
+swapped, endpoints outside the domain are clamped (matching `At()`'s
+endpoint extension), and a zero-length interval returns the color at that
+position. The returned color is always a valid RGBA color.
+
 ### Hard-Edged Gradient
 
 Convert gradient to hard-edged gradient with 11 segments and 0 smoothness.
