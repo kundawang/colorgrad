@@ -244,6 +244,43 @@ Output:
 #6e40aa
 ```
 
+### Get n colors spaced by perceived color difference
+
+`Colors` advances through the parameter space in equal steps, so unevenly
+placed stops, non-linear interpolation, or a partly flat gradient can bunch
+most bands into a small part of the color range. `PerceptualPalette` instead
+advances by perceptual distance (Euclidean distance in Oklab, optionally
+including alpha), giving regions that change quickly more samples and flat
+regions fewer. This is useful for discrete color bands such as choropleth maps.
+
+```go
+grad, err := colorgrad.NewGradient().
+    HtmlColors("#002bff", "#00d0ff", "#fff6aa", "#ff2b00").
+    Domain(0, 0.7, 0.9, 1).
+    Mode(colorgrad.BlendOklab).
+    Build()
+
+if err != nil {
+    panic(err)
+}
+
+// Five bands, each paired with its position in the gradient domain.
+palette, err := grad.PerceptualPalette(5, 1)
+if err != nil {
+    panic(err)
+}
+
+for _, entry := range palette {
+    fmt.Println(entry.Position, entry.Color.HexString())
+}
+```
+
+The result always includes the domain endpoints, is ordered by position, and is
+stable across calls. `alphaWeight` scales how much alpha differences count (0
+ignores alpha). A constant gradient, where the total color difference is zero,
+falls back to evenly spaced positions. Use `PerceptualPaletteXY` (or
+`PerceptualColors`) when you want parallel color and position slices instead.
+
 ### Hard-Edged Gradient
 
 Convert gradient to hard-edged gradient with 11 segments and 0 smoothness.

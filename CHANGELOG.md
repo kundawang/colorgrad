@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- New `Gradient.PerceptualPalette()`: sample colors at equal perceptual
+  distance (Oklab) instead of equal parameter steps, returning each color with
+  its domain position
+- New `Gradient.PerceptualPaletteXY()` / `Gradient.PerceptualColors()` for
+  parallel color and position slices
+- New `ColorDistance()` and `ColorDistanceWeighted()` helpers
+
 ## v0.11.1
 
 - Fix bug in Lab conversion
