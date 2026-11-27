@@ -81,6 +81,8 @@ func (lg basisGradient) At(t float64) Color {
 		return Lab(a, b, c, d).Clamp()
 	case BlendOklab:
 		return Oklab(a, b, c, d).Clamp()
+	case BlendOklch:
+		return oklchColor(a, b, c, d)
 	}
 
 	return Color{}

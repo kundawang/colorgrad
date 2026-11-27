@@ -154,6 +154,18 @@ grad, err := colorgrad.NewGradient().
 ```
 ![blend-modes](doc/images/blend-modes-3.png)
 
+Available modes: `BlendRgb`, `BlendLinearRgb`, `BlendLab`, `BlendOklab`, and
+`BlendOklch`. `BlendOklch` interpolates hue as an angle along the shortest arc,
+so stops near 0°/360° (e.g. 350° and 10°) blend through red instead of the long
+way around the hue circle.
+
+```go
+grad, err := colorgrad.NewGradient().
+    HtmlColors("#E24EA0", "#EE4A73").
+    Mode(colorgrad.BlendOklch).
+    Build()
+```
+
 ### Interpolation Mode
 
 ```go

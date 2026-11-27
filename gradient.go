@@ -14,6 +14,11 @@ const (
 	BlendLinearRgb
 	BlendLab
 	BlendOklab
+	// BlendOklch interpolates in OKLCh color space, taking the shortest
+	// path around the hue circle. Unlike BlendOklab, hue is interpolated
+	// as an angle, so colors close to 0°/360° do not take a detour
+	// through unrelated hues.
+	BlendOklch
 )
 
 func (b BlendMode) String() string {
@@ -26,6 +31,8 @@ func (b BlendMode) String() string {
 		return "BlendLab"
 	case BlendOklab:
 		return "BlendOklab"
+	case BlendOklch:
+		return "BlendOklch"
 	}
 	return ""
 }

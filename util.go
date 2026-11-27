@@ -66,6 +66,72 @@ func col2oklab(col Color) [4]float64 {
 	}
 }
 
+// Colors whose Oklch chroma is below this value are treated as achromatic.
+// Their hue carries no visual information, so it is borrowed from a
+// neighboring chromatic stop instead of being taken from numerical noise.
+// The value sits above the chroma that 8-bit gray values pick up from
+// rounding (roughly 2e-3) but well below a visible tint.
+const achromaticChromaEpsilon = 1e-2
+
+// col2oklch converts col to [L, C, h, A], where h is the hue angle in degrees.
+func col2oklch(col Color) [4]float64 {
+	arr := col2oklab(col)
+	c := math.Hypot(arr[1], arr[2])
+	h := math.Atan2(arr[2], arr[1]) * (180 / math.Pi)
+	return [4]float64{arr[0], c, normalizeAngle(h), col.A}
+}
+
+// adjustHue shifts h by whole turns so that it lies within 180 degrees of prev.
+// This makes each consecutive pair of stops interpolate along the shortest
+// arc around the hue circle, crossing 0/360 the short way.
+func adjustHue(prev, h float64) float64 {
+	d := h - prev
+	d = math.Mod(d+180, 360)
+	if d < 0 {
+		d += 360
+	}
+	return prev + d - 180
+}
+
+func nearestChromaticHue(colors [][4]float64, chromatic []bool, i int) float64 {
+	for d := 1; d < len(colors); d++ {
+		if i-d >= 0 && chromatic[i-d] {
+			return colors[i-d][2]
+		}
+		if i+d < len(colors) && chromatic[i+d] {
+			return colors[i+d][2]
+		}
+	}
+	return 0
+}
+
+// convertOklchColors converts colors to [L, C, h, A] triplets with continuous
+// hue: achromatic stops inherit a neighbor's hue, then hues are unwrapped so
+// every segment takes the shortest path.
+func convertOklchColors(colorsIn []Color) [][4]float64 {
+	colors := make([][4]float64, len(colorsIn))
+	chromatic := make([]bool, len(colorsIn))
+	for i, col := range colorsIn {
+		colors[i] = col2oklch(col)
+		chromatic[i] = colors[i][1] >= achromaticChromaEpsilon
+	}
+	for i := range colors {
+		if !chromatic[i] {
+			colors[i][2] = nearestChromaticHue(colors, chromatic, i)
+		}
+	}
+	for i := 1; i < len(colors); i++ {
+		colors[i][2] = adjustHue(colors[i-1][2], colors[i][2])
+	}
+	return colors
+}
+
+// oklchColor builds a valid color from Oklch components, where h is in degrees.
+// Out-of-range values produced by interpolation overshoot are clamped.
+func oklchColor(l, c, h, a float64) Color {
+	return Oklch(clamp01(l), math.Max(c, 0), h*math.Pi/180, clamp01(a)).Clamp()
+}
+
 func col2hsv(col Color) [4]float64 {
 	v := math.Max(col.R, math.Max(col.G, col.B))
 	d := v - math.Min(col.R, math.Min(col.G, col.B))
@@ -102,6 +168,10 @@ func normalizeAngle(t float64) float64 {
 }
 
 func convertColors(colorsIn []Color, mode BlendMode) [][4]float64 {
+	if mode == BlendOklch {
+		return convertOklchColors(colorsIn)
+	}
+
 	colors := make([][4]float64, len(colorsIn))
 	for i, col := range colorsIn {
 		switch mode {

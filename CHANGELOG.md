@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- New `BlendOklch`: OKLCh blending that takes the shortest arc around the hue circle
+- Achromatic stops borrow a neighboring hue in `BlendOklch`, avoiding hue noise from grays
+
 ## v0.11.1
 
 - Fix bug in Lab conversion

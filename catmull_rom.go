@@ -62,18 +62,7 @@ func newCatmullRomGradient(colors []Color, positions []float64, space BlendMode)
 	b := make([]float64, n)
 	c := make([]float64, n)
 	d := make([]float64, n)
-	for i, col := range colors {
-		var arr [4]float64
-		switch space {
-		case BlendRgb:
-			arr = [4]float64{col.R, col.G, col.B, col.A}
-		case BlendLinearRgb:
-			arr = col2linearRgb(col)
-		case BlendLab:
-			arr = col2lab(col)
-		case BlendOklab:
-			arr = col2oklab(col)
-		}
+	for i, arr := range convertColors(colors, space) {
 		a[i] = arr[0]
 		b[i] = arr[1]
 		c[i] = arr[2]
@@ -164,6 +153,8 @@ func (g catmullRomGradient) At(t float64) Color {
 		return Lab(a, b, c, d).Clamp()
 	case BlendOklab:
 		return Oklab(a, b, c, d).Clamp()
+	case BlendOklch:
+		return oklchColor(a, b, c, d)
 	}
 
 	return Color{}
