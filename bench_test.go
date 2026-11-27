@@ -91,3 +91,37 @@ func BenchmarkBasisGradient(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkCssStops(b *testing.B) {
+	grad, err := NewGradient().
+		HtmlColors(colors...).
+		Mode(BlendRgb).
+		Interpolation(InterpolationLinear).
+		Build()
+	if err != nil {
+		panic(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := grad.CssStops(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkCssStopsApprox(b *testing.B) {
+	grad, err := NewGradient().
+		HtmlColors(colors...).
+		Mode(BlendOklab).
+		Interpolation(InterpolationCatmullRom).
+		Build()
+	if err != nil {
+		panic(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := grad.CssStopsApprox(0.01, 1024); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

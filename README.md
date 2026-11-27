@@ -257,6 +257,34 @@ This is the effect of different smoothness.
 
 ![img](doc/images/sharp-gradients.png)
 
+### Export to CSS
+
+`CssStops()` exports a linear RGB gradient as CSS color stop text that can be
+fed back into `Css()`. Stop positions, colors and same-position hard edges are
+preserved exactly, and any finite domain is mapped to percentages.
+
+```go
+grad, err := colorgrad.NewGradient().
+    HtmlColors("red", "lime", "blue").
+    Domain(-100, 0, 100).
+    Build()
+
+css, err := grad.CssStops()
+// "rgb(100% 0% 0%) 0%, rgb(0% 100% 0%) 50%, rgb(0% 0% 100%) 100%"
+
+grad2, err := colorgrad.NewGradient().Css(css).Build()
+```
+
+For any other blend mode or interpolation (smoothstep, basis, Catmull-Rom),
+`CssStopsApprox()` adaptively builds a bounded number of stops such that the
+rebuilt gradient stays within a per-channel RGBA tolerance. It returns an
+error if the tolerance cannot be met within the stop budget.
+
+```go
+// Maximum 0.01 absolute error per RGBA channel, at most 256 stops.
+css, err := grad.CssStopsApprox(0.01, 256)
+```
+
 ## Examples
 
 ### Gradient Image

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- New `Gradient.CssStops()` for exact CSS color stop export of linear RGB gradients
+- New `Gradient.CssStopsApprox()` for tolerance-bounded CSS export of any gradient
+
 ## v0.11.1
 
 - Fix bug in Lab conversion
