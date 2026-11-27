@@ -179,3 +179,24 @@ type zeroGradient struct {
 func (zg zeroGradient) At(t float64) Color {
 	return Color{R: 0, G: 0, B: 0, A: 0}
 }
+
+// repeatingGradient repeats its inner gradient with the period [min, max).
+// Any position is mapped into the period before sampling, so the color is a
+// pure function of t: the seam always resolves to the color at min,
+// regardless of the direction from which it is approached.
+type repeatingGradient struct {
+	core   GradientCore
+	min    float64
+	period float64
+}
+
+func (rg repeatingGradient) At(t float64) Color {
+	x := modulo(t-rg.min, rg.period)
+	// Snap to the period start when floating-point noise lands the mapped
+	// position a few ulps below the period end, so that the seam color is
+	// stable and does not depend on the direction t approaches it from.
+	if rg.period-x <= 1e-15*(math.Abs(t-rg.min)+rg.period) {
+		x = 0
+	}
+	return rg.core.At(rg.min + x)
+}

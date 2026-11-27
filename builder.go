@@ -13,6 +13,7 @@ type GradientBuilder struct {
 	interpolation      Interpolation
 	invalidHtmlColors  []string
 	invalidCssGradient bool
+	repeat             bool
 	clean              bool
 }
 
@@ -59,6 +60,32 @@ func (gb *GradientBuilder) Css(s string) *GradientBuilder {
 		gb.colors = append(gb.colors, *st.color)
 		gb.positions = append(gb.positions, *st.pos)
 	}
+	gb.repeat = false
+	return gb
+}
+
+// CssRepeat parses CSS gradient color stops and builds a repeating gradient.
+//
+// Unlike Css, the stops are not extended to 0% and 100%: the explicit
+// positions of the first and last stops define the repeat period, and the
+// colors repeat with that period for any position. The first and last stops
+// must have explicit, finite positions, positions must be non-decreasing
+// (equal positions give hard edges), and the period must be greater than
+// zero, otherwise Build reports an invalid CSS gradient error.
+func (gb *GradientBuilder) CssRepeat(s string) *GradientBuilder {
+	gb.clean = false
+	stops, ok := parseCssRepeat(s)
+	if !ok {
+		gb.invalidCssGradient = true
+		return gb
+	}
+	gb.colors = gb.colors[:0]
+	gb.positions = gb.positions[:0]
+	for _, st := range stops {
+		gb.colors = append(gb.colors, *st.color)
+		gb.positions = append(gb.positions, *st.pos)
+	}
+	gb.repeat = true
 	return gb
 }
 
@@ -85,6 +112,7 @@ func (gb *GradientBuilder) Reset() *GradientBuilder {
 	gb.interpolation = InterpolationLinear
 	gb.invalidHtmlColors = gb.invalidHtmlColors[:0]
 	gb.invalidCssGradient = false
+	gb.repeat = false
 	gb.clean = false
 	return gb
 }
@@ -177,19 +205,27 @@ func (gb *GradientBuilder) Build() (Gradient, error) {
 		}, err
 	}
 
+	var grad Gradient
+
 	if gb.interpolation == InterpolationLinear {
-		return newLinearGradient(gb.colors, gb.positions, gb.mode), nil
+		grad = newLinearGradient(gb.colors, gb.positions, gb.mode)
+	} else if gb.interpolation == InterpolationSmoothstep {
+		grad = newSmoothstepGradient(gb.colors, gb.positions, gb.mode)
+	} else if gb.interpolation == InterpolationBasis {
+		grad = newBasisGradient(gb.colors, gb.positions, gb.mode)
+	} else {
+		grad = newCatmullRomGradient(gb.colors, gb.positions, gb.mode)
 	}
 
-	if gb.interpolation == InterpolationSmoothstep {
-		return newSmoothstepGradient(gb.colors, gb.positions, gb.mode), nil
+	if gb.repeat {
+		grad.Core = repeatingGradient{
+			core:   grad.Core,
+			min:    grad.Min,
+			period: grad.Max - grad.Min,
+		}
 	}
 
-	if gb.interpolation == InterpolationBasis {
-		return newBasisGradient(gb.colors, gb.positions, gb.mode), nil
-	}
-
-	return newCatmullRomGradient(gb.colors, gb.positions, gb.mode), nil
+	return grad, nil
 }
 
 // For testing purposes

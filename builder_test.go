@@ -2,6 +2,7 @@ package colorgrad
 
 import (
 	"image/color"
+	"math"
 	"testing"
 )
 
@@ -246,5 +247,97 @@ func Test_CssGradient(t *testing.T) {
 		_, err := NewGradient().Css(s).Build()
 		testTrue(t, err != nil)
 		test(t, err.Error(), "invalid CSS gradient")
+	}
+}
+
+func Test_CssRepeatGradient(t *testing.T) {
+	// Two-color ramp from 10% to 30%: the period is 20% and the
+	// colors repeat with that interval over the whole number line.
+	grad, err := NewGradient().CssRepeat("red 10%, blue 30%").Build()
+	test(t, err, nil)
+	test(t, domain(grad.Domain()), [2]float64{0.1, 0.3})
+
+	// Within one period
+	test(t, grad.At(0.1).HexString(), "#ff0000")
+	testColorClose(t, grad.At(0.2), Color{R: 0.5, G: 0, B: 0.5, A: 1})
+	testColorClose(t, grad.At(0.25), Color{R: 0.25, G: 0, B: 0.75, A: 1})
+
+	// Repetition at 20% intervals, in both directions
+	for _, tt := range []float64{0.1, 0.15, 0.2, 0.25, 0.29} {
+		c := grad.At(tt)
+		testColorClose(t, grad.At(tt+0.2), c)
+		testColorClose(t, grad.At(tt+0.4), c)
+		testColorClose(t, grad.At(tt-0.2), c)
+		testColorClose(t, grad.At(tt-2.2), c)
+	}
+
+	// The seam is stable: exactly on a period boundary the color is
+	// always the period-start color, from either direction.
+	test(t, grad.At(0.3).HexString(), "#ff0000")
+	test(t, grad.At(0.5).HexString(), "#ff0000")
+	test(t, grad.At(-0.1).HexString(), "#ff0000")
+	test(t, grad.At(-2.1).HexString(), "#ff0000")
+	test(t, grad.At(0.3-1e-12).HexString(), "#0000ff")
+	test(t, grad.At(0.3+1e-12).HexString(), "#ff0000")
+
+	// Non-zero start with negative positions
+	grad, err = NewGradient().CssRepeat("red -30%, blue -10%").Build()
+	test(t, err, nil)
+	test(t, domain(grad.Domain()), [2]float64{-0.3, -0.1})
+	test(t, grad.At(-0.3).HexString(), "#ff0000")
+	testColorClose(t, grad.At(-0.2), Color{R: 0.5, G: 0, B: 0.5, A: 1})
+	testColorClose(t, grad.At(0.0), Color{R: 0.5, G: 0, B: 0.5, A: 1})
+	test(t, grad.At(-0.1).HexString(), "#ff0000")
+
+	// Multiple stops, implicit middle position
+	grad, err = NewGradient().CssRepeat("red 10%, lime, blue 30%").Build()
+	test(t, err, nil)
+	test(t, grad.At(0.2).HexString(), "#00ff00")
+	test(t, grad.At(0.4).HexString(), "#00ff00")
+
+	// Hard edges: two stops at the same position
+	grad, err = NewGradient().CssRepeat("red 10%, red 20%, blue 20%, blue 30%").Build()
+	test(t, err, nil)
+	test(t, grad.At(0.15).HexString(), "#ff0000")
+	test(t, grad.At(0.25).HexString(), "#0000ff")
+	test(t, grad.At(0.35).HexString(), "#ff0000")
+	test(t, grad.At(0.45).HexString(), "#0000ff")
+
+	// Invalid definitions must fail explicitly
+	invalidRepeat := []string{
+		"",                            // empty
+		"red 10%",                     // single stop, no period
+		"red 10%, blue 10%",           // zero period
+		"red 30%, blue 10%",           // out-of-order stops
+		"red 10%, lime 25%, blue 20%", // out-of-order stops
+		"reds 10%, blue 30%",          // invalid color
+		"red 10%, blue xxx",           // invalid position
+		"red 10%, blue inf%",          // non-finite position
+		"red nan%, blue 30%",          // non-finite position
+		"red, blue 30%",               // first stop without explicit position
+		"red 10%, blue",               // last stop without explicit position
+		"red, blue",                   // no explicit positions at all
+	}
+	for _, s := range invalidRepeat {
+		grad, err := NewGradient().CssRepeat(s).Build()
+		testTrue(t, err != nil)
+		test(t, err.Error(), "invalid CSS gradient")
+		testTrue(t, isZeroGradient(grad))
+	}
+
+	// Css keeps its original semantics: stops are padded to 0%/100%
+	// and the gradient does not repeat.
+	grad, err = NewGradient().Css("red 10%, blue 30%").Build()
+	test(t, err, nil)
+	test(t, domain(grad.Domain()), [2]float64{0, 1})
+	test(t, grad.At(0).HexString(), "#ff0000")
+	test(t, grad.At(0.5).HexString(), "#0000ff")
+	test(t, grad.At(1).HexString(), "#0000ff")
+}
+
+func testColorClose(t *testing.T, a, b Color) {
+	t.Helper()
+	if math.Abs(a.R-b.R) > 1e-9 || math.Abs(a.G-b.G) > 1e-9 || math.Abs(a.B-b.B) > 1e-9 || math.Abs(a.A-b.A) > 1e-9 {
+		t.Errorf("colors differ: %+v vs %+v", a, b)
 	}
 }

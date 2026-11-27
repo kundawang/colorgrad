@@ -78,6 +78,93 @@ func parseCss(s string) ([]cssGradientStop, bool) {
 	return stops, true
 }
 
+// parseCssRepeat parses CSS gradient color stops for a repeating gradient.
+//
+// Unlike parseCss, the stops are NOT padded to 0% and 100%: the first and
+// last stops must carry explicit positions, and those two positions define
+// the repeat period. Stop positions must be finite and non-decreasing
+// (equal positions, i.e. hard edges, are allowed), and the period must be
+// greater than zero.
+func parseCssRepeat(s string) ([]cssGradientStop, bool) {
+	stops := []cssGradientStop{}
+
+	for _, stop := range splitByComma(s) {
+		if !prosesStop(&stops, splitBySpace(stop)) {
+			return stops, false
+		}
+	}
+
+	if len(stops) < 2 {
+		return stops, false
+	}
+
+	// The period is defined by explicit positions of the first and last stops.
+	if stops[0].color == nil || stops[0].pos == nil {
+		return stops, false
+	}
+
+	if stops[len(stops)-1].color == nil || stops[len(stops)-1].pos == nil {
+		return stops, false
+	}
+
+	// Explicit positions must be finite and non-decreasing.
+	prev := *stops[0].pos
+	if !isFinite(prev) {
+		return stops, false
+	}
+
+	for _, stop := range stops[1:] {
+		if stop.pos == nil {
+			continue
+		}
+		if !isFinite(*stop.pos) || *stop.pos < prev {
+			return stops, false
+		}
+		prev = *stop.pos
+	}
+
+	// The period must be greater than zero.
+	if !(*stops[len(stops)-1].pos > *stops[0].pos) {
+		return stops, false
+	}
+
+	// Fill in missing colors by blending the neighboring stops.
+	for i, stop := range stops {
+		if stop.color == nil {
+			if stops[i+1].color == nil {
+				return stops, false
+			}
+			stops[i].color = ptrColor(blendRgb(*stops[i-1].color, *stops[i+1].color, 0.5))
+		}
+	}
+
+	// Fill in missing positions by even interpolation between explicit stops.
+	for i, stop := range stops {
+		if stop.pos == nil {
+			for j := i + 1; j < len(stops); j++ {
+				if stops[j].pos != nil {
+					prev := *stops[i-1].pos
+					next := *stops[j].pos
+					stops[i].pos = ptr(prev + (next-prev)/float64(j-i+1))
+					break
+				}
+			}
+		}
+	}
+
+	for _, stop := range stops {
+		if stop.color == nil || stop.pos == nil {
+			return stops, false
+		}
+	}
+
+	return stops, true
+}
+
+func isFinite(f float64) bool {
+	return !math.IsNaN(f) && !math.IsInf(f, 0)
+}
+
 func ptr(f float64) *float64 {
 	return &f
 }
